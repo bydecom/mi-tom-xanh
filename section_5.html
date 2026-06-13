@@ -1,0 +1,25 @@
+<section id="s05-objects" style="position: relative;">
+  <video class="section-image" id="video-s05" muted playsinline>
+    <source src="assets/section_5.mp4" type="video/mp4">
+  </video>
+
+  <!-- 4 Nút tròn đỏ tàng hình -->
+  <button class="s05-play-btn" style="top: 54.5%; left: 46%;" onclick="openVideoModal('MKlx6a0uyHc')"
+    aria-label="Play Video 1"></button>
+  <button class="s05-play-btn" style="top: 83.5%; left: 46%;" onclick="openVideoModal('MKlx6a0uyHc')"
+    aria-label="Play Video 2"></button>
+  <button class="s05-play-btn" style="top: 55.3%; left: 90.9%;" onclick="openVideoModal('MKlx6a0uyHc')"
+    aria-label="Play Video 3"></button>
+  <button class="s05-play-btn" style="top: 83.5%; left: 90.9%;" onclick="openVideoModal('MKlx6a0uyHc')"
+    aria-label="Play Video 4"></button>
+
+  <!-- Popup Video (Modal) -->
+  <div id="video-modal" class="video-modal" onclick="closeVideoModal(event)">
+    <div class="video-modal-content">
+      <button class="video-close-btn" onclick="closeVideoModal(event)">&times;</button>
+      <div class="video-iframe-wrap">
+        <iframe id="youtube-iframe" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+      </div>
+    </div>
+  </div>
+</section>
