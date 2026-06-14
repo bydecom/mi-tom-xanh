@@ -40,6 +40,8 @@
 
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: 50px;
+  /* Chừa chiều cao của header khi cuộn trang */
 }
 
 body {
@@ -179,92 +181,156 @@ img {
 }
 
 /* =============================================
-   NAVIGATION
+   HEADER / NAVIGATION
    ============================================= */
-nav {
+#site-header {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  z-index: 100;
-  padding: 24px 32px;
+  z-index: 9000;
+  /* Dưới preloader (9999) nhưng trên tất cả section */
+}
+
+#main-nav {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  background: linear-gradient(to bottom, rgba(13, 13, 13, 0.95), rgba(13, 13, 13, 0));
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  justify-content: space-between;
+  padding: 18px 40px;
+  background: rgba(9, 9, 9, 0.72);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.055);
+  transition: background 0.4s ease, padding 0.4s ease;
 }
 
-.nav-logo {
-  font-family: var(--font-display);
-  font-size: 20px;
-  font-weight: 700;
+/* Thu nhỏ header khi scroll xuống */
+#site-header.scrolled #main-nav {
+  padding: 12px 40px;
+  background: rgba(9, 9, 9, 0.92);
+}
+
+/* ——— Logo / Home ——— */
+.nav-home {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
   color: var(--accent);
-  letter-spacing: 0.05em;
-  cursor: pointer;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  flex-shrink: 0;
 }
 
+.nav-home:hover {
+  opacity: 0.8;
+  transform: translateY(-1px);
+}
+
+.nav-home-icon {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  color: var(--accent);
+  /* Inherits currentColor from parent */
+}
+
+.nav-home-text {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+/* ——— Nav Links ——— */
 .nav-links {
   display: flex;
-  gap: 32px;
+  align-items: center;
+  gap: 36px;
   list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-links li {
+  display: flex;
 }
 
 .nav-links a {
-  color: var(--text-muted);
-  text-decoration: none;
-  font-size: 13px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  transition: color 0.3s, transform 0.3s;
   position: relative;
-  padding-bottom: 6px;
+  color: rgba(240, 235, 225, 0.55);
+  text-decoration: none;
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding-bottom: 5px;
+  transition: color 0.3s ease;
+  white-space: nowrap;
 }
 
+/* Underline animada */
 .nav-links a::after {
   content: '';
   position: absolute;
   bottom: 0;
   left: 0;
   width: 0%;
-  height: 1px;
+  height: 1.5px;
   background: var(--accent);
-  transition: width 0.3s ease;
+  border-radius: 2px;
+  transition: width 0.35s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
-.nav-links a:hover,
-.nav-links a.active {
+.nav-links a:hover {
   color: var(--text);
 }
 
+.nav-links a:hover::after,
 .nav-links a.active::after {
   width: 100%;
 }
 
-/* Burger Toggle for Mobile */
+.nav-links a.active {
+  color: var(--accent);
+}
+
+/* ——— Burger Toggle (Mobile) ——— */
 .nav-toggle {
   display: none;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
+  background: none;
+  border: none;
   cursor: pointer;
-  z-index: 101;
-  padding: 5px;
+  padding: 6px;
+  z-index: 9100;
+  flex-shrink: 0;
 }
 
 .nav-toggle span {
+  display: block;
   width: 24px;
   height: 1.5px;
   background: var(--text);
-  transition: transform 0.3s, opacity 0.3s;
+  border-radius: 2px;
+  transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s ease;
 }
 
-.nav-toggle.active span:first-child {
-  transform: translateY(7.5px) rotate(45deg);
+/* X state */
+.nav-toggle.active span:nth-child(1) {
+  transform: translateY(6.5px) rotate(45deg);
 }
 
-.nav-toggle.active span:last-child {
-  transform: translateY(-7.5px) rotate(-45deg);
+.nav-toggle.active span:nth-child(2) {
+  opacity: 0;
+  transform: scaleX(0);
+}
+
+.nav-toggle.active span:nth-child(3) {
+  transform: translateY(-6.5px) rotate(-45deg);
 }
 
 /* =============================================
@@ -367,6 +433,14 @@ nav {
   aspect-ratio: 602 / 76;
   z-index: 4;
   pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+#bar-layer.show-bar {
+  opacity: 1;
+  visibility: visible;
 }
 
 #bar-layer .track-bg {
@@ -392,6 +466,30 @@ nav {
   pointer-events: auto;
   user-select: none;
   /* Tránh bôi đen nhầm */
+}
+
+@keyframes nudge-right {
+
+  0%,
+  70%,
+  100% {
+    transform: translate(-50%, -50%);
+  }
+
+  75%,
+  90% {
+    transform: translate(-30%, -50%);
+    /* Dịch qua phải nhẹ */
+  }
+
+  82.5%,
+  95% {
+    transform: translate(-50%, -50%);
+  }
+}
+
+#slider-handle-wrap.nudge-anim {
+  animation: nudge-right 4s infinite ease-in-out;
 }
 
 #slider-handle-wrap img {
@@ -834,6 +932,26 @@ input[type="range"].transform-slider::-webkit-slider-thumb:hover {
   transform: translate(-50%, -50%);
 }
 
+.s02-dropdown-tooltip {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0;
+  width: 380px;
+  height: auto;
+  transform: translate(-50%, calc(-100% - 8px)) scale(0.8);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  will-change: top, left, transform;
+  border: 4px solid #4CAF50;
+  /* Viền xanh lá */
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.s02-dropdown-tooltip.show {
+  opacity: 1;
+}
+
 .section-headline {
   font-family: var(--font-display);
   font-size: clamp(32px, 4.5vw, 48px);
@@ -1155,8 +1273,17 @@ footer {
     --section-gap: 80px;
   }
 
-  nav {
-    padding: 20px 24px;
+  html {
+    scroll-padding-top: 55px;
+    /* Giảm khoảng cách chừa đầu cho mobile */
+  }
+
+  #main-nav {
+    padding: 14px 24px;
+  }
+
+  #site-header.scrolled #main-nav {
+    padding: 10px 24px;
   }
 
   .nav-toggle {
@@ -1167,17 +1294,19 @@ footer {
     position: fixed;
     top: 0;
     right: -100%;
-    width: 100%;
-    height: 100vh;
-    background: rgba(13, 13, 13, 0.98);
-    backdrop-filter: blur(20px);
-    display: flex;
+    width: 75vw;
+    max-width: 320px;
+    height: 100dvh;
+    background: rgba(9, 9, 9, 0.97);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 32px;
-    transition: right 0.4s cubic-bezier(0.25, 1, 0.5, 1);
-    z-index: 100;
+    gap: 40px;
+    transition: right 0.45s cubic-bezier(0.25, 1, 0.5, 1);
+    z-index: 9050;
+    border-left: 1px solid rgba(255, 255, 255, 0.06);
   }
 
   .nav-links.open {
@@ -1185,8 +1314,14 @@ footer {
   }
 
   .nav-links a {
-    font-size: 18px;
-    letter-spacing: 0.15em;
+    font-size: 16px;
+    letter-spacing: 0.16em;
+    color: rgba(240, 235, 225, 0.75);
+  }
+
+  .nav-links a:hover,
+  .nav-links a.active {
+    color: var(--accent);
   }
 
   #s01-landing {
@@ -1264,6 +1399,23 @@ footer {
   z-index: 10;
   text-decoration: none;
   display: block;
+  top: 92.4%;
+  left: 15.5%;
+  width: 30%;
+  height: 5.5%;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.s11-fb-btn.show-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.s11-fb-btn.show-btn:hover {
+  opacity: 0.85;
+  transform: translate(-50%, -50%) scale(1.03);
 }
 
 /* =============================================
@@ -1445,6 +1597,38 @@ footer {
   }
 }
 
+@keyframes wobble-s09 {
+
+  0%,
+  100% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+
+  15% {
+    transform: translate(-50%, -50%) rotate(-6deg);
+  }
+
+  30% {
+    transform: translate(-50%, -50%) rotate(5deg);
+  }
+
+  45% {
+    transform: translate(-50%, -50%) rotate(-4deg);
+  }
+
+  60% {
+    transform: translate(-50%, -50%) rotate(3deg);
+  }
+
+  75% {
+    transform: translate(-50%, -50%) rotate(-2deg);
+  }
+}
+
+#s09-new .s09-btn.wobbling {
+  animation: wobble-s09 0.25s infinite ease-in-out;
+}
+
 #s09-new .s09-btn {
   position: absolute;
   top: 83%;
@@ -1566,6 +1750,8 @@ footer {
   transform: translate(-50%, -50%);
   cursor: pointer;
   z-index: 10;
+  user-select: none;
+  -webkit-user-drag: none;
   /* Kéo dài thời gian bay vào để mượt hơn (1s) */
   transition: top 1s cubic-bezier(0.68, -0.55, 0.265, 1.55), left 1s cubic-bezier(0.68, -0.55, 0.265, 1.55), transform 0.2s ease, opacity 0.6s ease;
 }
@@ -1629,19 +1815,103 @@ footer {
   pointer-events: auto;
 }
 
+@keyframes jump-s07 {
+
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  50% {
+    transform: translate(-50%, -90%) scale(1.08);
+    /* Nhảy lên cao nhẹ */
+  }
+}
+
+.s07-char.jumping {
+  transition: none !important;
+  animation: jump-s07 0.6s ease-in-out;
+}
+
+/* Bảng điểm mini game Section 7 */
+#s07-score-board {
+  position: absolute;
+  top: 16%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.8);
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background-color: #4caf50;
+  border: 3px solid #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-family: inherit;
+  font-size: 36px;
+  font-weight: bold;
+  z-index: 15;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+#s07-score-board.show-score {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+#s07-score-board.bounce-score {
+  animation: score-pop 0.3s ease;
+}
+
+@keyframes score-pop {
+
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  50% {
+    transform: translate(-50%, -50%) scale(1.3);
+  }
+}
+
 /* =============================================
    SECTION 11 — OVERLAY VIDEO
    ============================================= */
 .s11-overlay-video {
   position: absolute;
-  top: 0;
   left: 0;
   width: 100%;
   height: auto;
-  z-index: 5;
-  /* Đè lên trên nền (z-index: 1) nhưng dưới các nút (z-index: 10+) */
   pointer-events: none;
   /* Tránh block tương tác click của các nút bên dưới */
+}
+
+/* Video 1 — nằm dưới */
+.s11-overlay-video.top-video {
+  top: 0;
+  z-index: 5;
+}
+
+/* Video 2 — đè lên video 1 */
+.s11-overlay-video.bottom-video {
+  bottom: 0;
+  z-index: 7;
+  /* Cao hơn top-video (5) để đè lên */
+
+  /* ↓↓ CHỈNH 2 GIÁ TRỊ NÀY TRỰC TIẾP ↓↓ */
+  --v2-crop-top: 20%;
+  /* Cắt phần đầu: tăng % để cắt nhiều hơn, ví dụ 8% */
+  --v2-shift-down: -9px;
+  /* Dịch xuống: tăng px để dịch nhiều hơn, ví dụ 40px */
+  /* ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑ */
+
+  clip-path: inset(var(--v2-crop-top) 0% 0% 0%);
+  transform: translateY(var(--v2-shift-down));
 }
 
 /* =============================================
@@ -1717,7 +1987,7 @@ footer {
   z-index: 9999;
   /* Luôn nổi lên trên cùng */
   opacity: 0;
-  transform: translate(-50%, -120%) scale(0.8);
+  transform: translate(-50%, calc(-100% - 8px)) scale(0.8);
   transition: opacity 0.2s ease, transform 0.2s ease;
   will-change: top, left, transform;
   /* Tối ưu hiệu năng khi di chuột */
@@ -1725,5 +1995,4 @@ footer {
 
 .s10-hover-img.show {
   opacity: 1;
-  transform: translate(-50%, -120%) scale(1);
 }
