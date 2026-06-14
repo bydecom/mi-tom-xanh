@@ -82,6 +82,34 @@ function initAppInteractions() {
     }, { passive: true });
   }
 
+  // ── DISABLE IMAGE DRAG (toàn trang) ──────────────────
+  document.querySelectorAll('img').forEach(img => {
+    img.setAttribute('draggable', 'false');
+  });
+
+  // ── DỪNG TẤT CẢ VIDEO TẠI 4.3 GIÂY (tính là ended) ──
+  const VIDEO_STOP_AT = 4.3; // ← Chỉnh thời điểm dừng ở đây (giây)
+
+  document.querySelectorAll('video').forEach(vid => {
+    let endedFired = false; // Chỉ fire 1 lần duy nhất
+
+    vid.addEventListener('timeupdate', () => {
+      if (!endedFired && vid.currentTime >= VIDEO_STOP_AT) {
+        endedFired = true;
+        vid.pause();
+        vid.currentTime = VIDEO_STOP_AT; // Đóng băng đúng frame
+
+        // Dispatch 'ended' để trigger tất cả listener đang chờ event này
+        vid.dispatchEvent(new Event('ended'));
+      }
+    });
+
+    // Reset flag khi video được play lại từ đầu (scroll back)
+    vid.addEventListener('play', () => {
+      if (vid.currentTime < VIDEO_STOP_AT) endedFired = false;
+    });
+  });
+
   // ── MOBILE NAV TOGGLE ────────────────────────────────
   const navToggle = document.getElementById("nav-toggle");
   const navLinks = document.querySelector(".nav-links");

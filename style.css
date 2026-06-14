@@ -56,6 +56,10 @@ body {
 img {
   display: block;
   max-width: 100%;
+  -webkit-user-drag: none;
+  /* Chặn drag ảnh trên Chrome/Safari */
+  user-select: none;
+  /* Chặn bôi đen ảnh khi kéo chuột */
 }
 
 /* Custom Scrollbar */
@@ -1906,7 +1910,7 @@ footer {
   /* ↓↓ CHỈNH 2 GIÁ TRỊ NÀY TRỰC TIẾP ↓↓ */
   --v2-crop-top: 20%;
   /* Cắt phần đầu: tăng % để cắt nhiều hơn, ví dụ 8% */
-  --v2-shift-down: -9px;
+  --v2-shift-down: -8px;
   /* Dịch xuống: tăng px để dịch nhiều hơn, ví dụ 40px */
   /* ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑ */
 
