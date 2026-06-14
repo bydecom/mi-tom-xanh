@@ -74,6 +74,9 @@ document.addEventListener("DOMContentLoaded", () => {
    ============================================= */
 function initAppInteractions() {
 
+  // ── AUDIO ELEMENTS ───────────────────────────────────
+  const typingAudio = document.getElementById('audio-typing');
+
   // ── HEADER SCROLL SHRINK ─────────────────────────────
   const siteHeader = document.getElementById('site-header');
   if (siteHeader) {
@@ -91,22 +94,15 @@ function initAppInteractions() {
   const VIDEO_STOP_AT = 4.3; // ← Chỉnh thời điểm dừng ở đây (giây)
 
   document.querySelectorAll('video').forEach(vid => {
-    let endedFired = false; // Chỉ fire 1 lần duy nhất
-
     vid.addEventListener('timeupdate', () => {
-      if (!endedFired && vid.currentTime >= VIDEO_STOP_AT) {
-        endedFired = true;
+      if (!vid._stopped && vid.currentTime >= VIDEO_STOP_AT) {
+        vid._stopped = true; // Đánh dấu video đã hoàn thành
         vid.pause();
         vid.currentTime = VIDEO_STOP_AT; // Đóng băng đúng frame
 
         // Dispatch 'ended' để trigger tất cả listener đang chờ event này
         vid.dispatchEvent(new Event('ended'));
       }
-    });
-
-    // Reset flag khi video được play lại từ đầu (scroll back)
-    vid.addEventListener('play', () => {
-      if (vid.currentTime < VIDEO_STOP_AT) endedFired = false;
     });
   });
 
@@ -132,6 +128,25 @@ function initAppInteractions() {
     });
   }
 
+  // ── GLOBAL CLICK / INTERACTION SOUND ─────────────────
+  const interactionSound = new Audio('assets/section_6.m4a');
+  interactionSound.preload = 'auto';
+
+  window.playInteractionSound = () => {
+    interactionSound.currentTime = 0;
+    interactionSound.play().catch(err => console.warn("Interaction sound prevented:", err));
+  };
+
+  document.addEventListener('click', (e) => {
+    // Phát hiện phần tử tương tác
+    const isInteractive = e.target.closest('a, button, [class*="btn"], .s06-click-img, #drag-zone, .s10-btn, .s05-hotspot, .nav-link, .nav-toggle, #s09-slider');
+    const isS07Game = e.target.closest('.s07-click-overlay'); // Trừ game section 7 ra vì có âm thanh riêng
+    const isS06SlideBtn = e.target.closest('.s06-invisible-btn'); // Trừ nút chuyển slide section 6 vì có section_6_1.mp3 riêng
+    if (isInteractive && !isS07Game && !isS06SlideBtn) {
+      window.playInteractionSound();
+    }
+  });
+
   // ── HERO REVEAL SLIDER ─────────────────────────────
   const section = document.getElementById('s01-landing');
   const textLayer = document.getElementById('text-layer');
@@ -148,6 +163,8 @@ function initAppInteractions() {
     const step3 = textLayer.querySelector('.step-3');
     const step4 = textLayer.querySelector('.step-4');
 
+    let currentStep = 1;
+
     const setPct = (x) => {
       const trackRect = track.getBoundingClientRect();
       let pct = ((x - trackRect.left) / trackRect.width) * 100;
@@ -160,6 +177,17 @@ function initAppInteractions() {
       if (step2) step2.classList.toggle('visible', pct >= 25 && pct < 50);
       if (step3) step3.classList.toggle('visible', pct >= 50 && pct < 75);
       if (step4) step4.classList.toggle('visible', pct >= 75);
+
+      // Phát âm thanh khi đổi text
+      let newStep = 1;
+      if (pct >= 25 && pct < 50) newStep = 2;
+      else if (pct >= 50 && pct < 75) newStep = 3;
+      else if (pct >= 75) newStep = 4;
+
+      if (newStep !== currentStep) {
+        currentStep = newStep;
+        if (window.playInteractionSound) window.playInteractionSound();
+      }
 
       if (modelWrap) {
         if (pct >= 99) {
@@ -184,14 +212,51 @@ function initAppInteractions() {
     setTimeout(initPct, 100);
     window.addEventListener('resize', initPct);
 
+    let isS01Visible = true;
+    const s01Observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        isS01Visible = entry.isIntersecting;
+      });
+    }, { threshold: 0.1 });
+    s01Observer.observe(section);
+
     // Chỉ hiện thanh trượt sau khi video kết thúc
     if (landingVideo) {
-      if (landingVideo.ended) {
+      const showTrackAndAnimate = () => {
+        // Khởi động lại animation để canh chuẩn xác thời gian phát âm thanh
+        handle.style.animation = 'none';
+        handle.offsetHeight; // trigger reflow
+        handle.style.animation = null;
         track.classList.add('show-bar');
-      } else {
-        landingVideo.addEventListener('ended', () => {
-          track.classList.add('show-bar');
+
+        // Trong CSS, animation nudge-right dài 4s, bắt đầu wobble ở 70% (tức 2.8s) và lắc lần hai ở 82.5% (tức 3.3s)
+        const playWobbleSound = () => {
+          // Chỉ phát âm thanh nếu section 1 đang hiển thị
+          if (handle.classList.contains('nudge-anim') && isS01Visible) {
+            if (window.playInteractionSound) window.playInteractionSound();
+
+            // Lắc lần 2 sau 500ms
+            setTimeout(() => {
+              if (handle.classList.contains('nudge-anim') && isS01Visible) {
+                if (window.playInteractionSound) window.playInteractionSound();
+              }
+            }, 500);
+          }
+        };
+
+        // Wobble lần đầu
+        setTimeout(playWobbleSound, 2800);
+
+        // Các lần wobble tiếp theo (animation lặp lại mỗi 4s)
+        handle.addEventListener('animationiteration', () => {
+          setTimeout(playWobbleSound, 2800);
         });
+      };
+
+      if (landingVideo.ended) {
+        showTrackAndAnimate();
+      } else {
+        landingVideo.addEventListener('ended', showTrackAndAnimate);
       }
     }
 
@@ -222,7 +287,146 @@ function initAppInteractions() {
     });
   }
 
-  // ── SCROLL-SPY: Active navigation indicators ────────
+  // ── AUDIO MANAGER ─────────────────────────────────────
+  const audioMap = {
+    's01-landing': 'audio-home',
+    's03-craft': 'audio-home',
+    's02-material': 'audio-material',
+    's07-cta': 'audio-material',
+    's08-new': 'audio-material',
+    's09-new': 'audio-material',
+    's04-voice': 'audio-story',
+    's05-objects': 'audio-story',
+    's06-impact': 'audio-story',
+    's10-new': 'audio-impact',
+    's11-new': 'audio-impact'
+  };
+
+  let currentAudioId = null;
+  let userInteracted = false;
+
+  const FADE_DURATION = 800; // 1 giây fade in/out
+  const FADE_STEPS = 20;
+  const FADE_INTERVAL = FADE_DURATION / FADE_STEPS;
+  const MAX_VOLUME = 1.0; // Tăng âm lượng lên mức tối đa (100%) theo yêu cầu
+
+  // Quản lý các interval fade để tránh đụng độ
+  const fadeIntervals = new Map();
+
+  const fadeAudio = (audio, direction) => {
+    if (fadeIntervals.has(audio.id)) {
+      clearInterval(fadeIntervals.get(audio.id));
+    }
+
+    const targetMaxVol = window._audioDimmed ? 0.1 : MAX_VOLUME;
+
+    if (direction === 'in') {
+      audio.volume = 0;
+      audio.play().catch(e => console.warn("Audio play prevented:", e));
+
+      let vol = 0;
+      const interval = setInterval(() => {
+        vol += targetMaxVol / FADE_STEPS;
+        if (vol >= targetMaxVol) {
+          vol = targetMaxVol;
+          clearInterval(interval);
+          fadeIntervals.delete(audio.id);
+        }
+        audio.volume = vol;
+      }, FADE_INTERVAL);
+      fadeIntervals.set(audio.id, interval);
+
+    } else if (direction === 'out') {
+      let vol = audio.volume;
+      const interval = setInterval(() => {
+        vol -= MAX_VOLUME / FADE_STEPS;
+        if (vol <= 0) {
+          vol = 0;
+          clearInterval(interval);
+          fadeIntervals.delete(audio.id);
+          audio.pause();
+          // LƯU Ý: Không reset audio.currentTime để lúc sau quay lại sẽ phát tiếp
+        }
+        audio.volume = vol;
+      }, FADE_INTERVAL);
+      fadeIntervals.set(audio.id, interval);
+    }
+  };
+
+  window.setAudioDimmed = (dimmed) => {
+    window._audioDimmed = dimmed;
+    const targetVol = dimmed ? 0.1 : MAX_VOLUME;
+    if (currentAudioId) {
+      const audio = document.getElementById(currentAudioId);
+      if (audio && !audio.paused) {
+        if (fadeIntervals.has(audio.id)) {
+          clearInterval(fadeIntervals.get(audio.id));
+        }
+        let vol = audio.volume;
+        const step = 0.05;
+        const interval = setInterval(() => {
+          if (dimmed ? vol > targetVol : vol < targetVol) {
+            vol += dimmed ? -step : step;
+            // Kẹp giá trị
+            if (vol < 0) vol = 0;
+            if (vol > MAX_VOLUME) vol = MAX_VOLUME;
+            audio.volume = vol;
+          } else {
+            audio.volume = targetVol;
+            clearInterval(interval);
+            fadeIntervals.delete(audio.id);
+          }
+        }, 50);
+        fadeIntervals.set(audio.id, interval);
+      }
+    }
+  };
+
+  const playAudio = (audioId) => {
+    if (!userInteracted || !audioId) return;
+
+    // Fade out các audio khác đang phát
+    document.querySelectorAll('audio').forEach(audio => {
+      if (audio.id !== audioId && !audio.paused) {
+        fadeAudio(audio, 'out');
+      }
+    });
+
+    // Fade in audio mục tiêu
+    const targetAudio = document.getElementById(audioId);
+    if (targetAudio && targetAudio.paused) {
+      fadeAudio(targetAudio, 'in');
+    }
+  };
+
+  const handleAudioSwitch = (sectionId) => {
+    const targetAudioId = audioMap[sectionId];
+    if (targetAudioId && targetAudioId !== currentAudioId) {
+      currentAudioId = targetAudioId;
+      playAudio(currentAudioId);
+    }
+  };
+
+  // User interaction unlocks audio playback
+  const unlockAudio = () => {
+    if (!userInteracted) {
+      userInteracted = true;
+      if (currentAudioId) {
+        playAudio(currentAudioId);
+      }
+      document.removeEventListener('click', unlockAudio);
+      document.removeEventListener('touchstart', unlockAudio);
+      document.removeEventListener('keydown', unlockAudio);
+      document.removeEventListener('scroll', unlockAudio); // Sometimes scrolling is counted
+    }
+  };
+
+  document.addEventListener('click', unlockAudio);
+  document.addEventListener('touchstart', unlockAudio);
+  document.addEventListener('keydown', unlockAudio);
+  document.addEventListener('scroll', unlockAudio, { once: true });
+
+  // ── SCROLL-SPY: Active navigation indicators & Audio ────────
   const observedSections = document.querySelectorAll("main > section");
   const navLinksList = document.querySelectorAll(".nav-links a");
 
@@ -237,10 +441,15 @@ function initAppInteractions() {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           const id = entry.target.getAttribute("id");
+
+          // Update Nav Links
           navLinksList.forEach(link => {
             const href = link.getAttribute("href").substring(1);
             link.classList.toggle("active", href === id);
           });
+
+          // Update Background Audio
+          handleAudioSwitch(id);
         }
       });
     }, observerOptions);
@@ -269,6 +478,13 @@ function initAppInteractions() {
       if (iframe && iframe.src.includes('about:blank')) {
         const dataSrc = iframe.getAttribute('data-src');
         if (dataSrc) iframe.src = dataSrc;
+      }
+
+      // Phát âm thanh chuyển slide
+      const s06SlideSound = document.getElementById('s06-slide-sound');
+      if (s06SlideSound) {
+        s06SlideSound.currentTime = 0; // Reset về 0 để phát ngay cả khi âm cũ chưa dứt
+        s06SlideSound.play().catch(err => console.warn("S06 slide sound play prevented:", err));
       }
     }
   };
@@ -310,22 +526,21 @@ function initAppInteractions() {
 
   // ── VIDEO PLAY ON SCROLL (SECTION 2, 3, 4, 5, 6, 7, 8, 10) ────
   const videosToPlayOnScroll = ["video-s02", "video-s03", "video-s04", "video-s05", "video-s06", "video-s07", "video-s08", "video-s10"];
+
   const videoObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       const vid = entry.target;
       const parent = vid.parentElement;
 
       if (entry.isIntersecting) {
-        // Vào viewport: chỉ play nếu video chưa kết thúc
-        if (!vid.ended) {
+        // Vào viewport: chỉ play nếu video chưa hoàn thành (chưa đạt 4.3s)
+        if (!vid._stopped) {
           vid.play().catch(e => console.warn("Video auto-play prevented:", e));
         }
         if (parent) parent.classList.add('video-playing');
       } else {
-        // Ra khỏi viewport: chỉ pause, không reset, giữ nguyên trạng thái
-        if (!vid.ended) {
-          vid.pause();
-        }
+        // Ra khỏi viewport: Cơ chế HARD bind -> không pause video nữa
+        // Để nó chạy cho xong (tới mốc 4.3s tự dừng) để tránh lỗi đơ đứt quãng (Promise play bị reject)
       }
     });
   }, { threshold: 0.4 });
@@ -334,6 +549,154 @@ function initAppInteractions() {
     const vid = document.getElementById(id);
     if (vid) videoObserver.observe(vid);
   });
+
+  const TYPING_START_AT = 0.8; // Skip khoảng lặng đầu
+  const TYPING_STOP_AT = 2.5;  // Dừng typing sound tại 2.5 giây
+  const typingSections = ['s01-landing', 's03-craft', 's04-voice', 's05-objects', 's06-impact', 's09-new', 's10-new', 's11-new'];
+
+  // Mỗi section có Audio object RIÊNG — hoàn toàn độc lập, không tranh nhau
+  const typingAudioSrc = document.getElementById('audio-typing')?.src || 'assets/typing.mp3';
+
+  const typingInstances = {};
+  typingSections.forEach(id => {
+    const audio = new Audio(typingAudioSrc);
+    audio.preload = 'auto';
+    audio.currentTime = TYPING_START_AT;
+
+    // Tự dừng tại 2.5s và đánh dấu completed
+    audio.addEventListener('timeupdate', () => {
+      if (!audio._completed && audio.currentTime >= TYPING_STOP_AT) {
+        audio.pause();
+        audio.currentTime = TYPING_STOP_AT;
+        audio._completed = true;
+      }
+    });
+
+    typingInstances[id] = audio;
+  });
+
+  const typingDirectSections = ['s01-landing', 's03-craft', 's04-voice', 's05-objects', 's06-impact', 's10-new', 's11-new'];
+  typingDirectSections.forEach(id => {
+    if (typingInstances[id]) typingInstances[id]._canPlay = true;
+  });
+
+  const typingObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const id = entry.target.getAttribute('id');
+      const audio = typingInstances[id];
+      if (!audio) return;
+
+      if (entry.isIntersecting) {
+        if (audio._completed || !audio._canPlay) return; // Đã xong hoặc chưa cấp quyền → bỏ qua
+        audio.play().catch(e => console.warn(`Typing SFX prevented for ${id}:`, e));
+      } else {
+        if (!audio._completed && !audio.paused) {
+          audio.pause(); // Pause + giữ nguyên vị trí để resume sau
+        }
+      }
+    });
+  }, { threshold: 0.3 });
+
+  // Đảm bảo DOM load đủ rồi mới observe
+  setTimeout(() => {
+    typingSections.forEach(id => {
+      const section = document.getElementById(id);
+      if (section) {
+        typingObserver.observe(section);
+      } else {
+        console.warn('Typing SFX: Không tìm thấy section', id);
+      }
+    });
+  }, 500);
+
+  // ── DRAWING SOUND ─────────────────────────────────────
+  // Sections có drawing: 2, 3, 4, 5, 7, 8, 9, 10
+  const drawingAudioSrc = document.getElementById('audio-drawing')?.src || 'assets/drawing.mp3';
+  const drawingSections = ['s02-material', 's03-craft', 's04-voice', 's05-objects', 's07-cta', 's08-new', 's09-new', 's10-new'];
+
+  const drawingInstances = {};
+  drawingSections.forEach(id => {
+    const audio = new Audio(drawingAudioSrc);
+    audio.preload = 'auto';
+
+    // Đánh dấu completed khi play hết file gốc
+    audio.addEventListener('ended', () => {
+      audio._completed = true;
+    });
+
+    // Giới hạn thời gian play tối đa 1 giây
+    audio.addEventListener('timeupdate', () => {
+      if (!audio._completed && audio.currentTime >= 1.5) {
+        audio.pause();
+        audio._completed = true;
+      }
+    });
+
+    drawingInstances[id] = audio;
+  });
+
+  // Default: các section này được phép play drawing ngay lập tức khi vào viewport
+  const drawingDirectSections = ['s02-material', 's04-voice', 's05-objects', 's07-cta', 's08-new', 's10-new'];
+  drawingDirectSections.forEach(id => {
+    if (drawingInstances[id]) drawingInstances[id]._canPlay = true;
+  });
+
+  const drawingObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const id = entry.target.getAttribute('id');
+      const audio = drawingInstances[id];
+      if (!audio) return;
+
+      if (entry.isIntersecting) {
+        // Chỉ play nếu đã được cấp quyền (_canPlay) và chưa chạy xong
+        if (audio._completed || !audio._canPlay) return;
+        audio.play().catch(e => console.warn(`Drawing SFX prevented for ${id}:`, e));
+      } else {
+        if (!audio._completed && !audio.paused) {
+          audio.pause(); // Pause khi scroll ra khỏi màn hình
+        }
+      }
+    });
+  }, { threshold: 0.3 });
+
+  // Section 3: Cấp quyền play drawing SAU KHI typing xong
+  const typingS03 = typingInstances['s03-craft'];
+  if (typingS03) {
+    typingS03.addEventListener('timeupdate', () => {
+      if (typingS03._completed && drawingInstances['s03-craft'] && !drawingInstances['s03-craft']._canPlay) {
+        drawingInstances['s03-craft']._canPlay = true;
+
+        // Nếu section vẫn đang trên màn hình (chưa bị cuộn đi), play luôn
+        const s03Element = document.getElementById('s03-craft');
+        const rect = s03Element?.getBoundingClientRect();
+        if (rect && rect.top < window.innerHeight && rect.bottom > 0) {
+          drawingInstances['s03-craft'].play().catch(e => console.warn('Drawing s03 prevented:', e));
+        }
+      }
+    });
+  }
+
+  // Section 9: Expose hàm để cấp quyền play drawing/typing sau khi nón bay xong
+  window._playDrawingS09 = () => {
+    const drawing = drawingInstances['s09-new'];
+    if (drawing && !drawing._completed && !drawing._canPlay) {
+      drawing._canPlay = true;
+      drawing.play().catch(e => console.warn('Drawing s09 prevented:', e));
+    }
+    const typing = typingInstances['s09-new'];
+    if (typing && !typing._completed && !typing._canPlay) {
+      typing._canPlay = true;
+      typing.play().catch(e => console.warn('Typing s09 prevented:', e));
+    }
+  };
+
+  // Đăng ký observe tất cả các section có drawing
+  setTimeout(() => {
+    drawingSections.forEach(id => {
+      const section = document.getElementById(id);
+      if (section) drawingObserver.observe(section);
+    });
+  }, 500);
 
   // ── SECTION 11 SYNC VIDEO PLAYBACK ──────────────────
   const s11Section = document.getElementById('s11-new');
@@ -345,13 +708,11 @@ function initAppInteractions() {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           // Resume nếu chưa xong
-          if (videoS11Top && !videoS11Top.ended) videoS11Top.play().catch(e => console.warn("videoS11Top play prevented:", e));
-          if (videoS11Bottom && !videoS11Bottom.ended) videoS11Bottom.play().catch(e => console.warn("videoS11Bottom play prevented:", e));
+          if (videoS11Top && !videoS11Top._stopped) videoS11Top.play().catch(e => console.warn("videoS11Top play prevented:", e));
+          if (videoS11Bottom && !videoS11Bottom._stopped) videoS11Bottom.play().catch(e => console.warn("videoS11Bottom play prevented:", e));
           if (s11Section) s11Section.classList.add('video-playing');
         } else {
-          // Pause khi scroll away, không reset
-          if (videoS11Top && !videoS11Top.ended) videoS11Top.pause();
-          if (videoS11Bottom && !videoS11Bottom.ended) videoS11Bottom.pause();
+          // Ra khỏi viewport: Cơ chế HARD bind -> không pause video nữa
         }
       });
     }, { threshold: 0.3 });
@@ -457,6 +818,8 @@ function initAppInteractions() {
 
   if (s09Slider && s09Section && s09Video) {
     let s09Triggered = false;
+    const s09FlyAudio = new Audio('assets/fly.m4a');
+    s09FlyAudio.preload = 'auto';
 
     const triggerS09Slide = () => {
       if (s09Triggered) return;
@@ -470,10 +833,16 @@ function initAppInteractions() {
         s09Slider.classList.remove('wobbling');
         s09Section.classList.add('slided');
 
-        // 3. Đợi trượt xong (1s) rồi bật video
+        // Phát âm thanh tiếng bay lên
+        s09FlyAudio.currentTime = 0;
+        s09FlyAudio.play().catch(e => console.warn('Fly audio prevented:', e));
+
+        // 3. Đợi trượt xong (1s) rồi bật video + drawing sound
         setTimeout(() => {
           s09Section.classList.add('video-playing');
           s09Video.play().catch(e => console.warn("Video play error:", e));
+          // Drawing sound bắt đầu sau khi nón bay lên xong
+          if (window._playDrawingS09) window._playDrawingS09();
         }, 1000);
       }, 1000);
     };
@@ -488,12 +857,11 @@ function initAppInteractions() {
           // Trigger animation lần đầu
           if (!s09Triggered) triggerS09Slide();
           // Resume video nếu đang phát dở
-          if (s09Section.classList.contains('video-playing') && !s09Video.ended) {
+          if (s09Section.classList.contains('video-playing') && !s09Video._stopped) {
             s09Video.play().catch(e => console.warn("Video play error:", e));
           }
         } else {
-          // Pause khi scroll away, không reset
-          if (!s09Video.ended) s09Video.pause();
+          // Ra khỏi viewport: Cơ chế HARD bind -> không pause video nữa
         }
       });
     }, {
@@ -524,6 +892,14 @@ function initAppInteractions() {
   // ── SECTION 7 JUMPING CHARACTERS ─────────────────────
   const s07Chars = document.querySelectorAll('.s07-char');
   if (s07Chars.length > 0) {
+    // Khởi tạo audio cho nhảy và click điểm
+    const jumpAudio = new Audio('assets/jumping.m4a');
+    jumpAudio.preload = 'auto';
+    const scoreAudio = new Audio('assets/score.mp3');
+    scoreAudio.preload = 'auto';
+    const failAudio = new Audio('assets/fail.mp3');
+    failAudio.preload = 'auto';
+
     // Khởi tạo trạng thái vị trí ban đầu của 4 nhân vật (theo %)
     const positions = [
       { left: 74, top: 75 },
@@ -536,6 +912,25 @@ function initAppInteractions() {
     const scoreBoard = document.getElementById('s07-score-board');
     const scoreVal = document.getElementById('s07-score-val');
     const s07Section = document.getElementById('s07-cta');
+
+    // Theo dõi xem section 7 có đang trên màn hình hay không
+    let isS07Visible = false;
+    if (s07Section) {
+      const s07VisibilityObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          isS07Visible = entry.isIntersecting;
+        });
+      }, { threshold: 0.1 });
+      s07VisibilityObserver.observe(s07Section);
+
+      // Lắng nghe click toàn bộ section 7, nếu không phải click vào mục tiêu thì tính là bấm hụt
+      s07Section.addEventListener('click', (e) => {
+        if (!e.target.closest('.s07-click-overlay')) {
+          failAudio.currentTime = 0;
+          failAudio.play().catch(e => console.warn('Fail audio prevented:', e));
+        }
+      });
+    }
 
     // Hàm cộng điểm dùng chung
     const addScore = () => {
@@ -553,8 +948,8 @@ function initAppInteractions() {
 
     // Lâu lâu tưng lên 1 cái (random 1 trong 4 con, không lặp lại liên tiếp)
     const triggerRandomJump = () => {
-      const sectionPlaying = s07Section?.classList.contains('video-playing');
-      if (sectionPlaying) {
+      // Chỉ trigger khi section 7 đang hiển thị trên màn hình
+      if (isS07Visible) {
         let randomIndex;
         do {
           randomIndex = Math.floor(Math.random() * s07Chars.length);
@@ -565,6 +960,10 @@ function initAppInteractions() {
 
         if (!char.classList.contains('jumping')) {
           char.classList.add('jumping');
+
+          // Phát âm thanh nhảy
+          jumpAudio.currentTime = 0;
+          jumpAudio.play().catch(e => console.warn('Jump audio prevented:', e));
 
           // Tạo overlay click đúng vị trí nhân vật đang hiển thị khi nhảy lên
           // (hitbox của char nằm ở vị trí gốc, không dịch chuyển theo animation)
@@ -598,6 +997,10 @@ function initAppInteractions() {
             if (!scored) {
               scored = true;
               addScore();
+
+              // Phát âm thanh ghi điểm
+              scoreAudio.currentTime = 0;
+              scoreAudio.play().catch(e => console.warn('Score audio prevented:', e));
             }
           });
 
@@ -706,6 +1109,9 @@ window.openVideoModal = function (videoId) {
     // Nhúng link Youtube có tự động bật (autoplay)
     iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
     modal.classList.add('show');
+
+    // Giảm âm lượng nhạc nền xuống 10%
+    if (window.setAudioDimmed) window.setAudioDimmed(true);
   }
 };
 
@@ -720,6 +1126,9 @@ window.closeVideoModal = function (event) {
       setTimeout(() => {
         iframe.src = '';
       }, 300);
+
+      // Khôi phục lại âm lượng nhạc nền
+      if (window.setAudioDimmed) window.setAudioDimmed(false);
     }
   }
 };
