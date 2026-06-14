@@ -201,7 +201,8 @@ img {
   align-items: center;
   justify-content: space-between;
   padding: 18px 40px;
-  background: rgba(9, 9, 9, 0.72);
+  background: rgba(140, 185, 90, 0.85);
+  /* Màu xanh lá nhạt hơn/sáng hơn */
   backdrop-filter: blur(18px) saturate(1.4);
   -webkit-backdrop-filter: blur(18px) saturate(1.4);
   border-bottom: 1px solid rgba(255, 255, 255, 0.055);
@@ -211,7 +212,8 @@ img {
 /* Thu nhỏ header khi scroll xuống */
 #site-header.scrolled #main-nav {
   padding: 12px 40px;
-  background: rgba(9, 9, 9, 0.92);
+  background: rgba(140, 185, 90, 0.95);
+  /* Xanh lá nhạt nhưng đặc hơn chút khi scroll */
 }
 
 /* ——— Logo / Home ——— */
@@ -220,7 +222,8 @@ img {
   align-items: center;
   gap: 10px;
   text-decoration: none;
-  color: var(--accent);
+  color: #000;
+  /* Đổi màu chữ sang đen */
   transition: opacity 0.25s ease, transform 0.25s ease;
   flex-shrink: 0;
 }
@@ -234,7 +237,8 @@ img {
   width: 22px;
   height: 22px;
   flex-shrink: 0;
-  color: var(--accent);
+  color: #000;
+  /* Đổi màu icon sang đen */
   /* Inherits currentColor from parent */
 }
 
@@ -243,7 +247,8 @@ img {
   font-size: 18px;
   font-weight: 400;
   letter-spacing: 0.06em;
-  color: var(--accent);
+  color: #000;
+  /* Đổi màu chữ sang đen */
   white-space: nowrap;
 }
 
@@ -263,7 +268,8 @@ img {
 
 .nav-links a {
   position: relative;
-  color: rgba(240, 235, 225, 0.55);
+  color: rgba(0, 0, 0, 0.7);
+  /* Màu chữ đen hơi mờ lúc bình thường */
   text-decoration: none;
   font-family: var(--font-body);
   font-size: 11.5px;
@@ -283,13 +289,15 @@ img {
   left: 0;
   width: 0%;
   height: 1.5px;
-  background: var(--accent);
+  background: #000;
+  /* Đường gạch dưới màu đen */
   border-radius: 2px;
   transition: width 0.35s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 .nav-links a:hover {
-  color: var(--text);
+  color: #000;
+  /* Hover thành đen đặc */
 }
 
 .nav-links a:hover::after,
@@ -298,7 +306,8 @@ img {
 }
 
 .nav-links a.active {
-  color: var(--accent);
+  color: #000;
+  /* Active thành đen đặc */
 }
 
 /* ——— Burger Toggle (Mobile) ——— */
@@ -318,7 +327,8 @@ img {
   display: block;
   width: 24px;
   height: 1.5px;
-  background: var(--text);
+  background: #000;
+  /* Đổi 3 dấu gạch burger menu sang màu đen */
   border-radius: 2px;
   transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s ease;
 }
